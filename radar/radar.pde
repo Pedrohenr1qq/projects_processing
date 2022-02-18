@@ -1,7 +1,12 @@
 //projeto radar
 
+import processing.serial.*;
+
+Serial port;
+
 int getDist=0;
 int getAng = 0;
+String infos = "";
 
 int coordX=0;
 int coordY=0;
@@ -10,11 +15,24 @@ int raz = 10/3;
 
 void setup(){
   size(820,500);
-
+  println("Portas: ");
+  printArray(Serial.list());
+  
+  port = new Serial(this,Serial.list()[0],9600);
+  
 }
 
 
 void draw(){
+  
+  if(port.available() > 0){
+    infos = port.readStringUntil('\n');
+    if(infos != null){
+      String[] values = splitTokens(infos,",");
+      getDist = int(values[0]);
+      getAng = int(values[1]);
+    }
+  }
   
   background(0,0,0);
   drawArcs();
@@ -24,8 +42,8 @@ void draw(){
   delay(2000);
  
   getDist = int(random(150));
-  getAng = int(random(180));
- 
+  if(getDist < 5){getDist = 5;}
+  
   coordX = calcPosX(getAng);
   coordY = calcPosY(getAng);
   
@@ -35,6 +53,9 @@ void draw(){
   println("x: " + coordX + "  y: " + coordY);
   
   drawPoints(ajustX,ajustY);
+  
+  drawVar(getAng);
+  
   drawCoords(getDist,getAng,coordX,coordY);
 }
 
@@ -57,7 +78,7 @@ void drawPoints(int x, int y){
   if(y <=10){
     y = 10;
   }
-  strokeWeight(10);
+  strokeWeight(15);
     stroke(250,0,0);
     point(x,y);
     delay(50);
@@ -132,20 +153,47 @@ void drawCoords(int dist,int angle, int x, int y){
   
 }
 
-void drawVar(int a){
-  int ang = abs(a);
-  //if(ang > 51){ang = 51;}
-  float rad = radians(ang);
-  float tg = tan(rad);
-  stroke(0,255,0);
+void drawVar(int ang){
+  
+  stroke(255);
   strokeWeight(5);
-  int posY = int (tg*410);
-  int ajust  = 500 - posY;
-  if(ang < 90){
-  line(0,ajust,width/2,height);
-  }else if(ang == 90){
-    line(width/2,0,width/2,height);
-  }else{
-    line(width,ajust,width/2,height);
+  
+  int ang2 = ang > 90 ? 180 - ang : ang;
+  float rad = radians(ang2);
+  float tg = tan(rad);
+  int posX = int(height/tg);
+  int posY = int((width/2) * tg);
+  int ajustX = 0,ajustY = 0;
+  if(posY > height){
+    posY = height;
   }
+  if(posY < 0){
+    posY = 0;
+  }
+  if(posX > width){
+    posX = width;
+  }
+  
+  if(ang < 90){
+    if(ang2 <= 50){
+      ajustY = height - posY;
+      line(width/2,height,0,ajustY);
+    }else{
+      ajustX = width/2 - posX;
+      line(width/2,height,ajustX,0); 
+    } 
+  }
+  else if(ang == 90){
+    line(width/2,height,width/2,0);
+  }
+  else{
+    if(ang2 <= 50){
+      ajustY = height - (posY);
+      line(width/2,height,width,ajustY);
+    }else{
+      ajustX =posX + width/2;
+      line(width/2,height,ajustX,0);
+    }
+  }
+  println("ang: " + ang2 + "| posX: "+ posX +" posY: "+ posY);
 }
